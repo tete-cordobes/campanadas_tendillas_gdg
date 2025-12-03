@@ -1,0 +1,527 @@
+name: Challenge Week 01 - Test Solution
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'challenges/week1/**/solution.*'
+
+jobs:
+  detect-language:
+    runs-on: ubuntu-latest
+    outputs:
+      language: ${{ steps.detect.outputs.language }}
+      solution-path: ${{ steps.detect.outputs.solution-path }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect language and solution file
+        id: detect
+        run: |
+          # Buscar archivos solution.* en subdirectorios de week1
+          for file in challenges/week1/*/solution.*; do
+            if [[ -f "$file" ]]; then
+              echo "solution-path=$file" >> $GITHUB_OUTPUT
+              case "${file##*.}" in
+                py)
+                  echo "language=python" >> $GITHUB_OUTPUT
+                  ;;
+                java)
+                  echo "language=java" >> $GITHUB_OUTPUT
+                  ;;
+              esac
+              echo "Detected: $file"
+              break
+            fi
+          done
+
+  test-python:
+    needs: detect-language
+    if: needs.detect-language.outputs.language == 'python'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Python Tests
+        env:
+          PRIVATE_TEST_DATA: ${{ secrets.WEEK_01_PRIVATE_TESTS }}
+          CHALLENGE_FILE_PATH: ${{ needs.detect-language.outputs.solution-path }}
+        run: |
+          python - << 'EOF'
+          import json
+          import os
+          import sys
+          import importlib.util
+
+          def run_challenge_tests():
+              challenge_path = os.environ.get('CHALLENGE_FILE_PATH')
+              if not challenge_path:
+                  print('Error: La ruta del archivo (CHALLENGE_FILE_PATH) no fue proporcionada.')
+                  sys.exit(1)
+
+              # Cargar el modulo del usuario
+              module_name = 'user_solution_module'
+              spec = importlib.util.spec_from_file_location(module_name, challenge_path)
+              if spec is None:
+                  print(f'Error: No se pudo encontrar el archivo en {challenge_path}')
+                  sys.exit(1)
+
+              user_solution = importlib.util.module_from_spec(spec)
+              try:
+                  spec.loader.exec_module(user_solution)
+              except Exception as e:
+                  print(f'Error al cargar el modulo: {e}')
+                  sys.exit(1)
+
+              # Cargar tests privados
+              private_test_data_json = os.environ.get('PRIVATE_TEST_DATA')
+              if not private_test_data_json:
+                  print('Error: SECRETOS DE PRUEBA NO ENCONTRADOS (WEEK_01_PRIVATE_TESTS).')
+                  sys.exit(1)
+
+              try:
+                  tests = json.loads(private_test_data_json)
+              except json.JSONDecodeError as e:
+                  print(f'Error: JSON invalido en PRIVATE_TEST_DATA: {e}')
+                  sys.exit(1)
+
+              # Obtener la clase Campana y funciones
+              Campana = getattr(user_solution, 'Campana', None)
+              mcd_func = getattr(user_solution, 'mcd', None)
+              mcm_func = getattr(user_solution, 'mcm', None)
+              sincronizar_dos_func = getattr(user_solution, 'sincronizar_dos', None)
+              sincronizar_multiple_func = getattr(user_solution, 'sincronizar_multiple', None)
+
+              all_passed = True
+              total_tests = 0
+              passed_tests = 0
+
+              print('--- Ejecutando Pruebas Privadas ---\n')
+
+              for i, test_case in enumerate(tests):
+                  total_tests += 1
+                  test_type = test_case.get('type', 'unknown')
+
+                  try:
+                      if test_type == 'crear_campana':
+                          periodo = test_case['periodo']
+                          fase = test_case.get('fase', 0)
+                          should_error = test_case.get('should_error', False)
+
+                          if should_error:
+                              try:
+                                  c = Campana(periodo, fase)
+                                  print(f'Prueba {i+1} (crear_campana): ❌ FAILED - Deberia lanzar error')
+                                  all_passed = False
+                              except (ValueError, Exception):
+                                  print(f'Prueba {i+1} (crear_campana): ✅ PASSED')
+                                  passed_tests += 1
+                          else:
+                              c = Campana(periodo, fase)
+                              if c.periodo == periodo and c.fase == fase:
+                                  print(f'Prueba {i+1} (crear_campana): ✅ PASSED')
+                                  passed_tests += 1
+                              else:
+                                  print(f'Prueba {i+1} (crear_campana): ❌ FAILED')
+                                  all_passed = False
+
+                      elif test_type == 'suena_en':
+                          periodo = test_case['periodo']
+                          fase = test_case.get('fase', 0)
+                          instante = test_case['instante']
+                          expected = test_case['expected']
+
+                          c = Campana(periodo, fase)
+                          result = c.suena_en(instante)
+
+                          if result == expected:
+                              print(f'Prueba {i+1} (suena_en): ✅ PASSED')
+                              passed_tests += 1
+                          else:
+                              print(f'Prueba {i+1} (suena_en): ❌ FAILED - Esperado {expected}, obtenido {result}')
+                              all_passed = False
+
+                      elif test_type == 'mcd':
+                          a = test_case['a']
+                          b = test_case['b']
+                          expected = test_case['expected']
+
+                          result = mcd_func(a, b)
+                          if result == expected:
+                              print(f'Prueba {i+1} (mcd): ✅ PASSED')
+                              passed_tests += 1
+                          else:
+                              print(f'Prueba {i+1} (mcd): ❌ FAILED - Esperado {expected}, obtenido {result}')
+                              all_passed = False
+
+                      elif test_type == 'mcm':
+                          a = test_case['a']
+                          b = test_case['b']
+                          expected = test_case['expected']
+
+                          result = mcm_func(a, b)
+                          if result == expected:
+                              print(f'Prueba {i+1} (mcm): ✅ PASSED')
+                              passed_tests += 1
+                          else:
+                              print(f'Prueba {i+1} (mcm): ❌ FAILED - Esperado {expected}, obtenido {result}')
+                              all_passed = False
+
+                      elif test_type == 'sincronizar_dos':
+                          p1 = test_case['periodo1']
+                          p2 = test_case['periodo2']
+                          expected = test_case['expected']
+
+                          c1 = Campana(p1)
+                          c2 = Campana(p2)
+                          result = sincronizar_dos_func(c1, c2)
+
+                          if result == expected:
+                              print(f'Prueba {i+1} (sincronizar_dos): ✅ PASSED')
+                              passed_tests += 1
+                          else:
+                              print(f'Prueba {i+1} (sincronizar_dos): ❌ FAILED - Esperado {expected}, obtenido {result}')
+                              all_passed = False
+
+                      elif test_type == 'sincronizar_multiple':
+                          periodos = test_case['periodos']
+                          expected = test_case['expected']
+
+                          campanas = [Campana(p) for p in periodos]
+                          result = sincronizar_multiple_func(campanas)
+
+                          if result == expected:
+                              print(f'Prueba {i+1} (sincronizar_multiple): ✅ PASSED')
+                              passed_tests += 1
+                          else:
+                              print(f'Prueba {i+1} (sincronizar_multiple): ❌ FAILED - Esperado {expected}, obtenido {result}')
+                              all_passed = False
+
+                      else:
+                          print(f'Prueba {i+1}: ⚠️ Tipo de test desconocido: {test_type}')
+
+                  except Exception as e:
+                      print(f'Prueba {i+1}: ❌ ERROR - {e}')
+                      all_passed = False
+
+              print(f'\n----------------------------------')
+              print(f'Resultado: {passed_tests}/{total_tests} tests pasados')
+
+              if all_passed:
+                  print('\n¡Todas las pruebas privadas han pasado! 🎉')
+                  sys.exit(0)
+              else:
+                  print('\nAlgunas pruebas han fallado.')
+                  sys.exit(1)
+
+          run_challenge_tests()
+          EOF
+
+  test-java:
+    needs: detect-language
+    if: needs.detect-language.outputs.language == 'java'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Run Java Tests
+        env:
+          PRIVATE_TEST_DATA: ${{ secrets.WEEK_01_PRIVATE_TESTS }}
+          CHALLENGE_FILE_PATH: ${{ needs.detect-language.outputs.solution-path }}
+        run: |
+          mkdir -p temp_java
+
+          # Copiar la solucion del usuario
+          cp "$CHALLENGE_FILE_PATH" temp_java/Campana.java
+
+          # Crear el runner de tests
+          cat > temp_java/TestRunner.java << 'JAVA_EOF'
+          import java.util.*;
+          import java.lang.reflect.*;
+
+          public class TestRunner {
+              public static void main(String[] args) {
+                  try {
+                      String privateTestData = System.getenv("PRIVATE_TEST_DATA");
+
+                      if (privateTestData == null || privateTestData.isEmpty()) {
+                          System.out.println("Error: SECRETOS DE PRUEBA NO ENCONTRADOS.");
+                          System.exit(1);
+                      }
+
+                      // Parser JSON simple
+                      List<Map<String, Object>> tests = parseJsonArray(privateTestData);
+
+                      int totalTests = 0;
+                      int passedTests = 0;
+                      boolean allPassed = true;
+
+                      System.out.println("--- Ejecutando Pruebas Privadas ---\n");
+
+                      for (int i = 0; i < tests.size(); i++) {
+                          totalTests++;
+                          Map<String, Object> testCase = tests.get(i);
+                          String testType = (String) testCase.get("type");
+
+                          try {
+                              boolean passed = false;
+
+                              if ("crear_campana".equals(testType)) {
+                                  int periodo = ((Number) testCase.get("periodo")).intValue();
+                                  int fase = testCase.containsKey("fase") ? ((Number) testCase.get("fase")).intValue() : 0;
+                                  boolean shouldError = testCase.containsKey("should_error") && (Boolean) testCase.get("should_error");
+
+                                  if (shouldError) {
+                                      try {
+                                          new Campana(periodo, fase);
+                                          System.out.println("Prueba " + (i+1) + " (crear_campana): ❌ FAILED - Deberia lanzar error");
+                                          allPassed = false;
+                                      } catch (IllegalArgumentException e) {
+                                          System.out.println("Prueba " + (i+1) + " (crear_campana): ✅ PASSED");
+                                          passedTests++;
+                                      }
+                                  } else {
+                                      Campana c = new Campana(periodo, fase);
+                                      if (c.getPeriodo() == periodo && c.getFase() == fase) {
+                                          System.out.println("Prueba " + (i+1) + " (crear_campana): ✅ PASSED");
+                                          passedTests++;
+                                      } else {
+                                          System.out.println("Prueba " + (i+1) + " (crear_campana): ❌ FAILED");
+                                          allPassed = false;
+                                      }
+                                  }
+
+                              } else if ("suena_en".equals(testType)) {
+                                  int periodo = ((Number) testCase.get("periodo")).intValue();
+                                  int fase = testCase.containsKey("fase") ? ((Number) testCase.get("fase")).intValue() : 0;
+                                  int instante = ((Number) testCase.get("instante")).intValue();
+                                  boolean expected = (Boolean) testCase.get("expected");
+
+                                  Campana c = new Campana(periodo, fase);
+                                  boolean result = c.suenaEn(instante);
+
+                                  if (result == expected) {
+                                      System.out.println("Prueba " + (i+1) + " (suena_en): ✅ PASSED");
+                                      passedTests++;
+                                  } else {
+                                      System.out.println("Prueba " + (i+1) + " (suena_en): ❌ FAILED - Esperado " + expected + ", obtenido " + result);
+                                      allPassed = false;
+                                  }
+
+                              } else if ("mcd".equals(testType)) {
+                                  int a = ((Number) testCase.get("a")).intValue();
+                                  int b = ((Number) testCase.get("b")).intValue();
+                                  int expected = ((Number) testCase.get("expected")).intValue();
+
+                                  int result = Campana.mcd(a, b);
+                                  if (result == expected) {
+                                      System.out.println("Prueba " + (i+1) + " (mcd): ✅ PASSED");
+                                      passedTests++;
+                                  } else {
+                                      System.out.println("Prueba " + (i+1) + " (mcd): ❌ FAILED - Esperado " + expected + ", obtenido " + result);
+                                      allPassed = false;
+                                  }
+
+                              } else if ("mcm".equals(testType)) {
+                                  int a = ((Number) testCase.get("a")).intValue();
+                                  int b = ((Number) testCase.get("b")).intValue();
+                                  int expected = ((Number) testCase.get("expected")).intValue();
+
+                                  int result = Campana.mcm(a, b);
+                                  if (result == expected) {
+                                      System.out.println("Prueba " + (i+1) + " (mcm): ✅ PASSED");
+                                      passedTests++;
+                                  } else {
+                                      System.out.println("Prueba " + (i+1) + " (mcm): ❌ FAILED - Esperado " + expected + ", obtenido " + result);
+                                      allPassed = false;
+                                  }
+
+                              } else if ("sincronizar_dos".equals(testType)) {
+                                  int p1 = ((Number) testCase.get("periodo1")).intValue();
+                                  int p2 = ((Number) testCase.get("periodo2")).intValue();
+                                  int expected = ((Number) testCase.get("expected")).intValue();
+
+                                  Campana c1 = new Campana(p1);
+                                  Campana c2 = new Campana(p2);
+                                  int result = Campana.sincronizarDos(c1, c2);
+
+                                  if (result == expected) {
+                                      System.out.println("Prueba " + (i+1) + " (sincronizar_dos): ✅ PASSED");
+                                      passedTests++;
+                                  } else {
+                                      System.out.println("Prueba " + (i+1) + " (sincronizar_dos): ❌ FAILED - Esperado " + expected + ", obtenido " + result);
+                                      allPassed = false;
+                                  }
+
+                              } else if ("sincronizar_multiple".equals(testType)) {
+                                  List<Number> periodosRaw = (List<Number>) testCase.get("periodos");
+                                  int expected = ((Number) testCase.get("expected")).intValue();
+
+                                  List<Campana> campanas = new ArrayList<>();
+                                  for (Number p : periodosRaw) {
+                                      campanas.add(new Campana(p.intValue()));
+                                  }
+
+                                  int result = Campana.sincronizarMultiple(campanas);
+
+                                  if (result == expected) {
+                                      System.out.println("Prueba " + (i+1) + " (sincronizar_multiple): ✅ PASSED");
+                                      passedTests++;
+                                  } else {
+                                      System.out.println("Prueba " + (i+1) + " (sincronizar_multiple): ❌ FAILED - Esperado " + expected + ", obtenido " + result);
+                                      allPassed = false;
+                                  }
+
+                              } else {
+                                  System.out.println("Prueba " + (i+1) + ": ⚠️ Tipo desconocido: " + testType);
+                              }
+
+                          } catch (Exception e) {
+                              System.out.println("Prueba " + (i+1) + ": ❌ ERROR - " + e.getMessage());
+                              allPassed = false;
+                          }
+                      }
+
+                      System.out.println("\n----------------------------------");
+                      System.out.println("Resultado: " + passedTests + "/" + totalTests + " tests pasados");
+
+                      if (allPassed) {
+                          System.out.println("\n¡Todas las pruebas privadas han pasado! 🎉");
+                          System.exit(0);
+                      } else {
+                          System.out.println("\nAlgunas pruebas han fallado.");
+                          System.exit(1);
+                      }
+
+                  } catch (Exception e) {
+                      System.out.println("Error fatal: " + e.getMessage());
+                      e.printStackTrace();
+                      System.exit(1);
+                  }
+              }
+
+              // Parser JSON simple (sin dependencias externas)
+              private static List<Map<String, Object>> parseJsonArray(String json) {
+                  List<Map<String, Object>> result = new ArrayList<>();
+                  json = json.trim();
+                  if (!json.startsWith("[") || !json.endsWith("]")) {
+                      throw new RuntimeException("Invalid JSON array");
+                  }
+
+                  json = json.substring(1, json.length() - 1).trim();
+                  if (json.isEmpty()) return result;
+
+                  int depth = 0;
+                  int start = 0;
+                  for (int i = 0; i < json.length(); i++) {
+                      char c = json.charAt(i);
+                      if (c == '{') depth++;
+                      else if (c == '}') depth--;
+                      else if (c == ',' && depth == 0) {
+                          result.add(parseJsonObject(json.substring(start, i).trim()));
+                          start = i + 1;
+                      }
+                  }
+                  result.add(parseJsonObject(json.substring(start).trim()));
+
+                  return result;
+              }
+
+              private static Map<String, Object> parseJsonObject(String json) {
+                  Map<String, Object> result = new HashMap<>();
+                  json = json.trim();
+                  if (!json.startsWith("{") || !json.endsWith("}")) {
+                      throw new RuntimeException("Invalid JSON object: " + json);
+                  }
+
+                  json = json.substring(1, json.length() - 1).trim();
+                  if (json.isEmpty()) return result;
+
+                  int depth = 0;
+                  int start = 0;
+                  boolean inString = false;
+
+                  for (int i = 0; i < json.length(); i++) {
+                      char c = json.charAt(i);
+                      if (c == '"' && (i == 0 || json.charAt(i-1) != '\\')) {
+                          inString = !inString;
+                      } else if (!inString) {
+                          if (c == '{' || c == '[') depth++;
+                          else if (c == '}' || c == ']') depth--;
+                          else if (c == ',' && depth == 0) {
+                              parseKeyValue(json.substring(start, i).trim(), result);
+                              start = i + 1;
+                          }
+                      }
+                  }
+                  parseKeyValue(json.substring(start).trim(), result);
+
+                  return result;
+              }
+
+              private static void parseKeyValue(String kv, Map<String, Object> map) {
+                  int colonIdx = kv.indexOf(':');
+                  if (colonIdx == -1) return;
+
+                  String key = kv.substring(0, colonIdx).trim();
+                  String value = kv.substring(colonIdx + 1).trim();
+
+                  // Remove quotes from key
+                  if (key.startsWith("\"") && key.endsWith("\"")) {
+                      key = key.substring(1, key.length() - 1);
+                  }
+
+                  map.put(key, parseValue(value));
+              }
+
+              private static Object parseValue(String value) {
+                  value = value.trim();
+                  if (value.equals("true")) return true;
+                  if (value.equals("false")) return false;
+                  if (value.equals("null")) return null;
+                  if (value.startsWith("\"") && value.endsWith("\"")) {
+                      return value.substring(1, value.length() - 1);
+                  }
+                  if (value.startsWith("[")) {
+                      List<Object> list = new ArrayList<>();
+                      value = value.substring(1, value.length() - 1).trim();
+                      if (!value.isEmpty()) {
+                          for (String item : value.split(",")) {
+                              list.add(parseValue(item.trim()));
+                          }
+                      }
+                      return list;
+                  }
+                  try {
+                      if (value.contains(".")) {
+                          return Double.parseDouble(value);
+                      }
+                      return Integer.parseInt(value);
+                  } catch (NumberFormatException e) {
+                      return value;
+                  }
+              }
+          }
+          JAVA_EOF
+
+          cd temp_java
+          javac Campana.java TestRunner.java
+          java TestRunner
+
+          cd ..
+          rm -rf temp_java

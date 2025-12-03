@@ -1,223 +1,173 @@
-# 🔔 Campanadas de las Tendillas
+# GDG Advent Challenges
 
-## Día 5 - Reto TDD
+Repositorio oficial de retos semanales de programacion del GDG.
 
-Las campanas de las Tendillas en Córdoba tienen diferentes periodos de sonido. Tu misión es calcular cuándo sonarán todas juntas por primera vez.
+## Estructura del Repositorio
 
----
-
-## 📋 Conceptos Clave
-
-| Concepto | Descripción | Ejemplo |
-|----------|-------------|---------|
-| **Periodo** | Cada cuántos segundos suena | periodo=3 → suena cada 3s |
-| **Fase** | Desfase inicial | fase=2 → empieza en t=2 |
-| **MCM** | Mínimo Común Múltiplo | MCM(3,5)=15 |
-
-### ¿Cuándo suena una campana?
-
-Una campana suena en el instante T si:
 ```
-T > 0
-(T - fase) >= 0
-(T - fase) es divisible por periodo
+├── .github/
+│   └── workflows/
+│       └── tests_challenge_week1.yml
+├── README.md
+└── challenges/
+    └── week1/
+        ├── challenge.md          # Descripcion del reto
+        ├── solution.md           # Pistas y solucion (spoiler!)
+        ├── python/
+        │   └── solution.py       # Plantilla Python
+        └── java/
+            └── solution.java     # Plantilla Java
 ```
 
-**Ejemplo:**
-- Campana A: periodo=3, fase=0 → suena en: 3, 6, 9, 12, **15**, 18...
-- Campana B: periodo=5, fase=0 → suena en: 5, 10, **15**, 20...
-- Primera sincronización: **T=15**
-
 ---
 
-## 🎯 Niveles del Reto
+## Como Participar
 
-| Nivel | Objetivo | Puntos |
-|-------|----------|--------|
-| 1 | Crear campana con periodo y fase | 6 pts |
-| 2 | Calcular si suena en instante T | 6 pts |
-| 3 | MCM entre dos campanas | 6 pts |
-| 4 | Sincronizar múltiples campanas | 6 pts |
-| 5 | Casos edge y optimización | 6 pts |
+### 1. Crea tu rama
 
-**Total: 30 puntos** (2 pts por cada test)
-
----
-
-## 🚀 Cómo Empezar
-
-### Versión Python
-
-#### 1. Abre el archivo `python/campana.py`
-
-Encontrarás funciones con `# TU CÓDIGO AQUÍ`. Esa es tu zona de trabajo.
-
-#### 2. Ejecuta los tests
+Desde la rama `main`, crea tu propia rama siguiendo el formato:
 
 ```bash
-cd python
-
-# Todos los tests
-pytest test_campana.py -v
-
-# Solo un nivel específico
-pytest test_campana.py -v -k "nivel1"
-pytest test_campana.py -v -k "nivel2"
-
-# Ver puntuación detallada
-python calcular_puntos.py
+git checkout main
+git pull origin main
+git checkout -b tu_usuario_week1_solution
 ```
 
-### Versión Java
+**Formato del nombre:** `username_weekX_solution`
 
-#### 1. Abre el archivo `java/src/main/java/com/gdg/campanadas/Campana.java`
+Ejemplos:
+- `jgarcia_week1_solution`
+- `maria_week1_solution`
 
-Encontrarás métodos con `// TU CÓDIGO AQUÍ`. Esa es tu zona de trabajo.
+### 2. Implementa tu solucion
 
-#### 2. Ejecuta los tests
+1. Ve a la carpeta del lenguaje que prefieras:
+   - Python: `challenges/week1/python/solution.py`
+   - Java: `challenges/week1/java/solution.java`
 
+2. Lee el reto en `challenges/week1/challenge.md`
+
+3. Implementa las funciones marcadas con `# TU CODIGO AQUI` o `// TU CODIGO AQUI`
+
+4. **NO cambies los nombres de las funciones ni la clase**
+
+### 3. Prueba localmente (opcional pero recomendado)
+
+**Python:**
 ```bash
-cd java
+cd challenges/week1/python
+# Si tienes los tests locales
+pytest -v
+```
 
-# Con Maven
+**Java:**
+```bash
+cd challenges/week1/java
+javac solution.java
+# Si tienes tests locales con Maven
 mvn test
-
-# Solo un nivel específico
-mvn test -Dtest=Nivel1Test
-mvn test -Dtest=Nivel2Test
 ```
+
+### 4. Sube tus cambios y crea un PR
+
+```bash
+git add challenges/week1/python/solution.py  # o java/solution.java
+git commit -m "feat: Week 1 solution - tu_usuario"
+git push origin tu_usuario_week1_solution
+```
+
+Luego ve a GitHub y crea un **Pull Request** hacia `main`.
+
+### 5. Espera los resultados
+
+- Cada vez que hagas push, se ejecutaran automaticamente los tests privados
+- Podras ver los resultados en la pestana "Actions" de tu PR
+- Los tests mostraran que pruebas pasaron y cuales fallaron
 
 ---
 
-## 📖 Guía por Nivel
+## Sistema de Puntuacion
 
-### Nivel 1: Crear Campana
-
-**Python:**
-```python
-def __init__(self, periodo: int, fase: int = 0):
-    # Guardar atributos
-    # Validar: periodo > 0, fase >= 0
-    # Si no cumple, lanzar ValueError
-```
-
-**Java:**
-```java
-public Campana(int periodo, int fase) {
-    // Guardar atributos
-    // Validar: periodo > 0, fase >= 0
-    // Si no cumple, lanzar IllegalArgumentException
-}
-```
-
-### Nivel 2: ¿Suena en T?
-
-**Python:**
-```python
-def suena_en(self, instante: int) -> bool:
-    # T debe ser > 0
-    # (T - fase) debe ser >= 0
-    # (T - fase) % periodo == 0
-```
-
-**Java:**
-```java
-public boolean suenaEn(int instante) {
-    // T debe ser > 0
-    // (T - fase) debe ser >= 0
-    // (T - fase) % periodo == 0
-}
-```
-
-### Nivel 3: MCM
-
-**Python:**
-```python
-def mcd(a, b):
-    # Algoritmo de Euclides
-    # while b: a, b = b, a % b
-    # return a
-
-def mcm(a, b):
-    # mcm = (a * b) / mcd(a, b)
-```
-
-**Java:**
-```java
-public static int mcd(int a, int b) {
-    // Algoritmo de Euclides
-    // while (b != 0) { int temp = b; b = a % b; a = temp; }
-    // return a;
-}
-
-public static int mcm(int a, int b) {
-    // mcm = (a * b) / mcd(a, b)
-}
-```
-
-### Nivel 4: Múltiples Campanas
-
-**Python:**
-```python
-def sincronizar_multiple(campanas):
-    # Lista vacía → -1
-    # Una campana → su primera campanada
-    # Varias → aplicar MCM iterativamente
-```
-
-**Java:**
-```java
-public static int sincronizarMultiple(List<Campana> campanas) {
-    // Lista vacía → -1
-    // Una campana → su primera campanada
-    // Varias → aplicar MCM iterativamente
-}
-```
-
-### Nivel 5: Funciones Extra
-- Contar cuántas veces suena cada campana
-- Listar todos los momentos de sincronización
+- Cada reto tiene varios niveles de dificultad
+- Cada test pasado suma puntos
+- El **leaderboard** se calcula segun:
+  1. Numero de tests pasados
+  2. Hora de creacion del PR (en caso de empate)
 
 ---
 
-## 💡 Tips
+## Reglas Importantes
 
-1. **Lee bien los comentarios** en los archivos de código
-2. **Un test a la vez**: no intentes pasar todos de golpe
-3. **El MCM es la clave**: si entiendes MCM, el resto fluye
-4. **Usa las funciones de visualización** para debuggear (Python)
-
----
-
-## 🧮 Matemáticas Útiles
-
-### Algoritmo de Euclides (MCD)
-```
-MCD(48, 18):
-48 = 18 × 2 + 12
-18 = 12 × 1 + 6
-12 = 6 × 2 + 0
-→ MCD = 6
-```
-
-### Fórmula del MCM
-```
-MCM(a, b) = (a × b) / MCD(a, b)
-MCM(12, 8) = (12 × 8) / 4 = 24
-```
+1. **NO hagas merge de tu PR** - Los PRs son solo para evaluar tu solucion
+2. **NO copies soluciones** de otros participantes
+3. **Usa solo el lenguaje de tu eleccion** (Python o Java por semana)
+4. **Respeta el naming** de tu rama: `username_weekX_solution`
 
 ---
 
-## 🏆 Evaluación
+## Calendario de Retos
 
-```
-0-6 pts   → 🌱 Principiante
-7-12 pts  → 💪 En progreso  
-13-18 pts → 👍 Buen nivel
-19-24 pts → ⭐ Avanzado
-25-30 pts → 🎉 ¡Maestro de las campanadas!
-```
+| Semana | Reto | Estado |
+|--------|------|--------|
+| Week 1 | Campanadas de las Tendillas | Activo |
+| Week 2 | Por anunciar | Proximo |
 
 ---
 
-¡Buena suerte! 🔔
+## FAQ
+
+### ¿Puedo usar librerias externas?
+Depende del reto. Lee las instrucciones en `challenge.md`.
+
+### ¿Puedo hacer varios PRs?
+Si, pero solo el ultimo sera evaluado.
+
+### ¿Como veo mi puntuacion?
+Mira los resultados de los Actions en tu PR.
+
+### ¿Puedo hacer PRs para ambos lenguajes?
+Si! Crea una rama por cada uno:
+- `usuario_week1_python`
+- `usuario_week1_java`
+
+---
+
+## Para Organizadores
+
+### Configurar tests privados
+
+1. Ve a **Settings > Secrets and variables > Actions**
+2. Crea un nuevo secret: `WEEK_01_PRIVATE_TESTS`
+3. El contenido debe ser un JSON array:
+
+```json
+[
+  {"type": "crear_campana", "periodo": 5, "fase": 0, "should_error": false},
+  {"type": "crear_campana", "periodo": 0, "should_error": true},
+  {"type": "suena_en", "periodo": 3, "fase": 0, "instante": 9, "expected": true},
+  {"type": "suena_en", "periodo": 3, "fase": 0, "instante": 7, "expected": false},
+  {"type": "mcd", "a": 12, "b": 8, "expected": 4},
+  {"type": "mcm", "a": 3, "b": 5, "expected": 15},
+  {"type": "sincronizar_dos", "periodo1": 3, "periodo2": 5, "expected": 15},
+  {"type": "sincronizar_multiple", "periodos": [2, 3, 4], "expected": 12}
+]
+```
+
+### Proteger la rama main
+
+1. Ve a **Settings > Branches**
+2. Anade una regla para `main`
+3. Activa:
+   - Require a pull request before merging
+   - Require approvals: 1+
+   - Do not allow bypassing the above settings
+
+---
+
+## Contacto
+
+¿Dudas? Contacta a los organizadores del GDG.
+
+---
+
+¡Buena suerte! 🚀
