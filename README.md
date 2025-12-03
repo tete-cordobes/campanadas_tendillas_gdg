@@ -132,42 +132,10 @@ Si! Crea una rama por cada uno:
 
 ---
 
-## Para Organizadores
-
-### Configurar tests privados
-
-1. Ve a **Settings > Secrets and variables > Actions**
-2. Crea un nuevo secret: `WEEK_01_PRIVATE_TESTS`
-3. El contenido debe ser un JSON array:
-
-```json
-[
-  {"type": "crear_campana", "periodo": 5, "fase": 0, "should_error": false},
-  {"type": "crear_campana", "periodo": 0, "should_error": true},
-  {"type": "suena_en", "periodo": 3, "fase": 0, "instante": 9, "expected": true},
-  {"type": "suena_en", "periodo": 3, "fase": 0, "instante": 7, "expected": false},
-  {"type": "mcd", "a": 12, "b": 8, "expected": 4},
-  {"type": "mcm", "a": 3, "b": 5, "expected": 15},
-  {"type": "sincronizar_dos", "periodo1": 3, "periodo2": 5, "expected": 15},
-  {"type": "sincronizar_multiple", "periodos": [2, 3, 4], "expected": 12}
-]
-```
-
-### Proteger la rama main
-
-1. Ve a **Settings > Branches**
-2. Anade una regla para `main`
-3. Activa:
-   - Require a pull request before merging
-   - Require approvals: 1+
-   - Do not allow bypassing the above settings
-
----
-
 ## Contacto
 
-¿Dudas? Contacta a los organizadores del GDG.
+¿Dudas? Contacta a los organizadores del GDG de Córdoba
 
 ---
 
-¡Buena suerte! 🚀
+¡Buena suerte! 🚀 y al turrón!
