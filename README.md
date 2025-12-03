@@ -103,16 +103,6 @@ Luego ve a GitHub y crea un **Pull Request** hacia `main`.
 3. **Usa solo el lenguaje de tu eleccion** (Python o Java por semana)
 4. **Respeta el naming** de tu rama: `username_weekX_solution`
 
----
-
-## Calendario de Retos
-
-| Semana | Reto | Estado |
-|--------|------|--------|
-| Week 1 | Campanadas de las Tendillas | Activo |
-| Week 2 | Por anunciar | Proximo |
-
----
 
 ## FAQ
 
